@@ -3,6 +3,18 @@ import { File as FileType } from '../types/file';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+interface FileFilters {
+  search?: string;
+  fileType?: string;
+  minSize?: number;
+  maxSize?: number;
+  startDate?: string;
+  endDate?: string;
+  isReference?: boolean;
+  minReferenceCount?: number;
+  maxReferenceCount?: number;
+}
+
 export const fileService = {
   async uploadFile(file: File): Promise<FileType> {
     try {
@@ -44,9 +56,36 @@ export const fileService = {
     }
   },
 
-  async getFiles(): Promise<FileType[]> {
-    const response = await axios.get(`${API_URL}/files/`);
-    return response.data;
+  async getFiles(filters?: FileFilters): Promise<FileType[]> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      if (filters.search) params.append('search', filters.search);
+      if (filters.fileType) params.append('file_type', filters.fileType);
+      if (filters.minSize) params.append('min_size', filters.minSize.toString());
+      if (filters.maxSize) params.append('max_size', filters.maxSize.toString());
+      
+      // Format dates to YYYY-MM-DD
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        const formattedStartDate = startDate.toISOString().split('T')[0];
+        params.append('start_date', formattedStartDate);
+      }
+      
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        const formattedEndDate = endDate.toISOString().split('T')[0];
+        params.append('end_date', formattedEndDate);
+      }
+      
+      if (filters.isReference !== undefined) params.append('is_reference', filters.isReference.toString());
+      if (filters.minReferenceCount) params.append('min_reference_count', filters.minReferenceCount.toString());
+      if (filters.maxReferenceCount) params.append('max_reference_count', filters.maxReferenceCount.toString());
+    }
+
+    console.log('Sending request with params:', params.toString());
+    const response = await axios.get(`${API_URL}/files/?${params.toString()}`);
+    return response.data.results || [];
   },
 
   async deleteFile(id: string): Promise<void> {

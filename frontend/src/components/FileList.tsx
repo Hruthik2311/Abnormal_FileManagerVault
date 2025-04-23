@@ -3,15 +3,28 @@ import { fileService } from '../services/fileService';
 import { File as FileType } from '../types/file';
 import { DocumentIcon, TrashIcon, ArrowDownTrayIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileFilter } from './FileFilter';
 
 export const FileList: React.FC = () => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<{
+    search?: string;
+    fileType?: string;
+    minSize?: number;
+    maxSize?: number;
+    startDate?: string;
+    endDate?: string;
+    isReference?: boolean;
+    minReferenceCount?: number;
+    maxReferenceCount?: number;
+  }>({});
 
-  // Query for fetching files
+  // Query for fetching files with filters
   const { data: files, isLoading, error: queryError } = useQuery({
-    queryKey: ['files'],
-    queryFn: fileService.getFiles,
+    queryKey: ['files', currentPage, filters],
+    queryFn: () => fileService.getFiles(filters),
   });
 
   // Mutation for deleting files
@@ -51,6 +64,11 @@ export const FileList: React.FC = () => {
     } catch (err) {
       console.error('Download error:', err);
     }
+  };
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   if (isLoading) {
@@ -97,7 +115,8 @@ export const FileList: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Uploaded Files</h2>
+      <FileFilter onFilterChange={handleFilterChange} />
+
       {error && (
         <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
           <div className="flex">
@@ -120,6 +139,7 @@ export const FileList: React.FC = () => {
           </div>
         </div>
       )}
+
       {!files || files.length === 0 ? (
         <div className="text-center py-12">
           <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -129,62 +149,64 @@ export const FileList: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="mt-6 flow-root">
-          <ul className="-my-5 divide-y divide-gray-200">
-            {files.map((file) => (
-              <li key={file.id} className="py-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    {file.is_reference ? (
-                      <LinkIcon className="h-8 w-8 text-blue-400" />
-                    ) : (
-                      <DocumentIcon className="h-8 w-8 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.original_filename}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {file.file_type} • {(file.size / 1024).toFixed(2)} KB
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Uploaded {new Date(file.uploaded_at).toLocaleString()}
-                    </p>
-                    {file.is_reference && (
-                      <p className="text-sm text-blue-600">
-                        Reference to original file
+        <>
+          <div className="mt-6 flow-root">
+            <ul className="-my-5 divide-y divide-gray-200">
+              {files.map((file) => (
+                <li key={file.id} className="py-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {file.is_reference ? (
+                        <LinkIcon className="h-8 w-8 text-blue-400" />
+                      ) : (
+                        <DocumentIcon className="h-8 w-8 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {file.original_filename}
                       </p>
-                    )}
-                    {!file.is_reference && file.reference_count > 1 && (
-                      <p className="text-sm text-green-600">
-                        Referenced {file.reference_count - 1} times
+                      <p className="text-sm text-gray-500">
+                        {file.file_type} • {(file.size / 1024).toFixed(2)} KB
                       </p>
-                    )}
+                      <p className="text-sm text-gray-500">
+                        Uploaded {new Date(file.uploaded_at).toLocaleString()}
+                      </p>
+                      {file.is_reference && (
+                        <p className="text-sm text-blue-600">
+                          Reference to original file
+                        </p>
+                      )}
+                      {!file.is_reference && file.reference_count > 1 && (
+                        <p className="text-sm text-green-600">
+                          Referenced {file.reference_count - 1} times
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleDownload(file.file, file.original_filename)}
+                        disabled={downloadMutation.isPending}
+                        className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                      >
+                        <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                        Download
+                      </button>
+                      <button
+                        onClick={() => handleDelete(file.id)}
+                        disabled={deleteMutation.isPending}
+                        className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleDownload(file.file, file.original_filename)}
-                      disabled={downloadMutation.isPending}
-                      className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                      Download
-                    </button>
-                    <button
-                      onClick={() => handleDelete(file.id)}
-                      disabled={deleteMutation.isPending}
-                      className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      <TrashIcon className="h-4 w-4 mr-1" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
     </div>
   );
