@@ -54,7 +54,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
   };
 
   const handleApplyFilters = () => {
-    const processedFilters: any = {};
+    const processedFilters: any = {}; 
     const newActiveFilters: string[] = [];
 
     // File Type (keeping the working logic)
