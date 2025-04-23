@@ -39,6 +39,20 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     }));
   };
 
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilters(prev => ({
+      ...prev,
+      search: value
+    }));
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleApplyFilters();
+    }
+  };
+
   const handleApplyFilters = () => {
     const processedFilters: any = {};
     const newActiveFilters: string[] = [];
@@ -165,7 +179,8 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
               type="text"
               name="search"
               value={filters.search}
-              onChange={handleInputChange}
+              onChange={handleSearch}
+              onKeyUp={handleKeyUp}
               className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
               placeholder="Search files..."
             />
