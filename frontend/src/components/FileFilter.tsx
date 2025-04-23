@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface FileFilterProps {
@@ -17,7 +17,7 @@ interface FileFilterProps {
 
 export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showClearButton, setShowClearButton] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     search: '',
     fileType: '',
@@ -32,7 +32,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('Input Changed:', name, value);
+    console.log('Input changed:', name, value);
     setFilters(prev => ({
       ...prev,
       [name]: value
@@ -41,50 +41,75 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
 
   const handleApplyFilters = () => {
     const processedFilters: any = {};
+    const newActiveFilters: string[] = [];
 
-    // Process each filter only if it has a value
-    if (filters.search?.trim()) {
-      processedFilters.search = filters.search.trim();
-    }
-    if (filters.fileType?.trim()) {
+    // File Type (keeping the working logic)
+    if (filters.fileType) {
       processedFilters.fileType = filters.fileType;
-    }
-    if (filters.startDate?.trim()) {
-      processedFilters.startDate = filters.startDate;
-    }
-    if (filters.endDate?.trim()) {
-      processedFilters.endDate = filters.endDate;
-    }
-    if (filters.minSize?.toString().trim()) {
-      processedFilters.minSize = Number(filters.minSize);
-    }
-    if (filters.maxSize?.toString().trim()) {
-      processedFilters.maxSize = Number(filters.maxSize);
-    }
-    if (filters.isReference?.trim()) {
-      processedFilters.isReference = filters.isReference === 'true';
-    }
-    if (filters.minReferenceCount?.toString().trim()) {
-      processedFilters.minReferenceCount = Number(filters.minReferenceCount);
-    }
-    if (filters.maxReferenceCount?.toString().trim()) {
-      processedFilters.maxReferenceCount = Number(filters.maxReferenceCount);
+      newActiveFilters.push('fileType');
     }
 
-    // Check if any filters are applied
-    const hasFilters = Object.keys(processedFilters).length > 0;
-    console.log('Applied Filters:', processedFilters);
-    console.log('Has Filters:', hasFilters);
-    
-    // Update state
-    setShowClearButton(hasFilters);
-    onFilterChange(processedFilters);
-    setIsExpanded(false);
+    // Start Date
+    if (filters.startDate) {
+      processedFilters.startDate = filters.startDate;
+      newActiveFilters.push('startDate');
+    }
+
+    // End Date
+    if (filters.endDate) {
+      processedFilters.endDate = filters.endDate;
+      newActiveFilters.push('endDate');
+    }
+
+    // Min Size
+    if (filters.minSize) {
+      processedFilters.minSize = Number(filters.minSize);
+      newActiveFilters.push('minSize');
+    }
+
+    // Max Size
+    if (filters.maxSize) {
+      processedFilters.maxSize = Number(filters.maxSize);
+      newActiveFilters.push('maxSize');
+    }
+
+    // Min References
+    if (filters.minReferenceCount) {
+      processedFilters.minReferenceCount = Number(filters.minReferenceCount);
+      newActiveFilters.push('minReferenceCount');
+    }
+
+    // Max References
+    if (filters.maxReferenceCount) {
+      processedFilters.maxReferenceCount = Number(filters.maxReferenceCount);
+      newActiveFilters.push('maxReferenceCount');
+    }
+
+    // Search
+    if (filters.search) {
+      processedFilters.search = filters.search;
+      newActiveFilters.push('search');
+    }
+
+    // Reference Status
+    if (filters.isReference) {
+      processedFilters.isReference = filters.isReference === 'true';
+      newActiveFilters.push('isReference');
+    }
+
+    console.log('Current filters:', filters);
+    console.log('Processed filters:', processedFilters);
+    console.log('Active filters:', newActiveFilters);
+
+    // Only update if we have active filters
+    if (newActiveFilters.length > 0) {
+      setActiveFilters(newActiveFilters);
+      onFilterChange(processedFilters);
+      setIsExpanded(false);
+    }
   };
 
   const handleClearFilters = () => {
-    console.log('Clearing Filters');
-    // Reset all filters
     const emptyFilters = {
       search: '',
       fileType: '',
@@ -98,15 +123,9 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     };
     
     setFilters(emptyFilters);
-    setShowClearButton(false);
+    setActiveFilters([]);
     onFilterChange({});
   };
-
-  // Add useEffect to log state changes
-  useEffect(() => {
-    console.log('Show Clear Button:', showClearButton);
-    console.log('Current Filters:', filters);
-  }, [showClearButton, filters]);
 
   return (
     <div className="bg-white shadow sm:rounded-lg">
@@ -117,7 +136,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
             <h3 className="ml-2 text-lg font-medium leading-6 text-gray-900">Filters</h3>
           </div>
           <div className="flex items-center gap-3">
-            {showClearButton && !isExpanded && (
+            {activeFilters.length > 0 && !isExpanded && (
               <button
                 type="button"
                 onClick={handleClearFilters}
@@ -129,17 +148,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
             )}
             <button
               type="button"
-              onClick={() => {
-                setIsExpanded(!isExpanded);
-                // Don't hide the clear button when opening/closing panel
-                // if there are active filters
-                if (isExpanded) {
-                  const hasActiveFilters = Object.values(filters).some(value => 
-                    value !== '' && value !== undefined && value !== null
-                  );
-                  setShowClearButton(hasActiveFilters);
-                }
-              }}
+              onClick={() => setIsExpanded(!isExpanded)}
               className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
             >
               {isExpanded ? 'Hide Filters' : 'Show Filters'}
@@ -157,11 +166,6 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
               name="search"
               value={filters.search}
               onChange={handleInputChange}
-              onKeyUp={(e) => {
-                if (e.key === 'Enter') {
-                  handleApplyFilters();
-                }
-              }}
               className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
               placeholder="Search files..."
             />
