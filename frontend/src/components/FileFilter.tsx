@@ -18,7 +18,8 @@ interface FileFilterProps {
 export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [hasFilters, setHasFilters] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>(null);
   const [filters, setFilters] = useState({
     search: '',
     fileType: '',
@@ -31,10 +32,11 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     maxReferenceCount: '',
   });
 
-  // Effect to update hasActiveFilters when activeFilters changes
+  // Track when filters are active
   useEffect(() => {
-    setHasActiveFilters(activeFilters.length > 0);
-  }, [activeFilters]);
+    const hasActiveFilters = appliedFilters !== null || Object.values(filters).some(value => value !== '');
+    setHasFilters(hasActiveFilters);
+  }, [filters, appliedFilters]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -58,7 +60,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     }
   };
 
-  const handleApplyFilters = async () => {
+  const handleApplyFilters = () => {
     const processedFilters: any = {};
     const newActiveFilters: string[] = [];
 
@@ -78,13 +80,14 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
       newActiveFilters.push('endDate');
     }
 
+    // Convert KB to bytes (1 KB = 1024 bytes)
     if (filters.minSize) {
-      processedFilters.minSize = Number(filters.minSize);
+      processedFilters.minSize = Number(filters.minSize) * 1024; // Convert KB to bytes
       newActiveFilters.push('minSize');
     }
 
     if (filters.maxSize) {
-      processedFilters.maxSize = Number(filters.maxSize);
+      processedFilters.maxSize = Number(filters.maxSize) * 1024; // Convert KB to bytes
       newActiveFilters.push('maxSize');
     }
 
@@ -109,19 +112,9 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     }
 
     if (newActiveFilters.length > 0) {
-      // Update active filters first
-      await new Promise<void>(resolve => {
-        setActiveFilters(newActiveFilters);
-        resolve();
-      });
-
-      // Then update hasActiveFilters
-      setHasActiveFilters(true);
-
-      // Then trigger filter change
+      setActiveFilters(newActiveFilters);
+      setAppliedFilters(processedFilters);
       onFilterChange(processedFilters);
-
-      // Finally close the panel
       setIsExpanded(false);
     }
   };
@@ -141,7 +134,8 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     
     setFilters(emptyFilters);
     setActiveFilters([]);
-    setHasActiveFilters(false);
+    setAppliedFilters(null);
+    setHasFilters(false);
     onFilterChange({});
   };
 
@@ -154,16 +148,14 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
             <h3 className="ml-2 text-lg font-medium leading-6 text-gray-900">Filters</h3>
           </div>
           <div className="flex items-center gap-3">
-            {hasActiveFilters && !isExpanded && (
-              <button
+            <button
                 type="button"
                 onClick={handleClearFilters}
                 className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
               >
-                <XMarkIcon className="h-4 w-4 mr-1" />
+              <XMarkIcon className="h-4 w-4 mr-1" />
                 Clear Filters
               </button>
-            )}
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
