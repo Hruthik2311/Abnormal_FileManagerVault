@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface FileFilterProps {
@@ -18,6 +18,7 @@ interface FileFilterProps {
 export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     fileType: '',
@@ -30,9 +31,13 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     maxReferenceCount: '',
   });
 
+  // Effect to update hasActiveFilters when activeFilters changes
+  useEffect(() => {
+    setHasActiveFilters(activeFilters.length > 0);
+  }, [activeFilters]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log('Input changed:', name, value);
     setFilters(prev => ({
       ...prev,
       [name]: value
@@ -53,72 +58,70 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     }
   };
 
-  const handleApplyFilters = () => {
-    const processedFilters: any = {}; 
+  const handleApplyFilters = async () => {
+    const processedFilters: any = {};
     const newActiveFilters: string[] = [];
 
-    // File Type (keeping the working logic)
+    // Process each filter type
     if (filters.fileType) {
       processedFilters.fileType = filters.fileType;
       newActiveFilters.push('fileType');
     }
 
-    // Start Date
     if (filters.startDate) {
       processedFilters.startDate = filters.startDate;
       newActiveFilters.push('startDate');
     }
 
-    // End Date
     if (filters.endDate) {
       processedFilters.endDate = filters.endDate;
       newActiveFilters.push('endDate');
     }
 
-    // Min Size
     if (filters.minSize) {
       processedFilters.minSize = Number(filters.minSize);
       newActiveFilters.push('minSize');
     }
 
-    // Max Size
     if (filters.maxSize) {
       processedFilters.maxSize = Number(filters.maxSize);
       newActiveFilters.push('maxSize');
     }
 
-    // Min References
     if (filters.minReferenceCount) {
       processedFilters.minReferenceCount = Number(filters.minReferenceCount);
       newActiveFilters.push('minReferenceCount');
     }
 
-    // Max References
     if (filters.maxReferenceCount) {
       processedFilters.maxReferenceCount = Number(filters.maxReferenceCount);
       newActiveFilters.push('maxReferenceCount');
     }
 
-    // Search
     if (filters.search) {
       processedFilters.search = filters.search;
       newActiveFilters.push('search');
     }
 
-    // Reference Status
     if (filters.isReference) {
       processedFilters.isReference = filters.isReference === 'true';
       newActiveFilters.push('isReference');
     }
 
-    console.log('Current filters:', filters);
-    console.log('Processed filters:', processedFilters);
-    console.log('Active filters:', newActiveFilters);
-
-    // Only update if we have active filters
     if (newActiveFilters.length > 0) {
-      setActiveFilters(newActiveFilters);
+      // Update active filters first
+      await new Promise<void>(resolve => {
+        setActiveFilters(newActiveFilters);
+        resolve();
+      });
+
+      // Then update hasActiveFilters
+      setHasActiveFilters(true);
+
+      // Then trigger filter change
       onFilterChange(processedFilters);
+
+      // Finally close the panel
       setIsExpanded(false);
     }
   };
@@ -138,6 +141,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
     
     setFilters(emptyFilters);
     setActiveFilters([]);
+    setHasActiveFilters(false);
     onFilterChange({});
   };
 
@@ -150,7 +154,7 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
             <h3 className="ml-2 text-lg font-medium leading-6 text-gray-900">Filters</h3>
           </div>
           <div className="flex items-center gap-3">
-            {activeFilters.length > 0 && !isExpanded && (
+            {hasActiveFilters && !isExpanded && (
               <button
                 type="button"
                 onClick={handleClearFilters}
