@@ -14,11 +14,14 @@ services:
         value: "False"
     autoDeploy: true
 
-    # Optional: persist media/uploads
+    # Persist media/uploads
     disk:
-      name: media
-      mountPath: /backend/media
-      sizeGB: 1
+      - name: media
+        mountPath: /backend/media
+        sizeGB: 1
+      - name: data
+        mountPath: /backend/data
+        sizeGB: 1
 
     # Set working directory
     rootDir: .
