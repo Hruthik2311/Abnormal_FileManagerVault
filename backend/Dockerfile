@@ -1,5 +1,11 @@
-FROM python:3.10-slim
+# Use Python 3.9
+FROM python:3.9-slim
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set work directory
 WORKDIR /app
 
 # Install system dependencies
@@ -8,26 +14,27 @@ RUN apt-get update && \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements file
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
-COPY . .
+# Copy the current directory contents into the container
+COPY . /app/
 
-# Create necessary directories
-RUN mkdir -p media staticfiles data
+# Ensure the data directory exists before running the app
+RUN mkdir -p /app/data
 
-# Set permissions
-RUN chmod -R 777 data media staticfiles
+# Create a script to run migrations and start the server
+RUN echo '#!/bin/bash\n\
+python manage.py makemigrations\n\
+python manage.py migrate\n\
+python manage.py runserver 0.0.0.0:8000' > /app/start.sh && \
+chmod +x /app/start.sh
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
-
-# Make start script executable
-COPY start.sh .
-RUN chmod +x start.sh
-
+# Expose port 8000
 EXPOSE 8000
 
-CMD ["./start.sh"] 
+# Start the application
+CMD ["/app/start.sh"]

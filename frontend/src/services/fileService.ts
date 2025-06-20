@@ -60,30 +60,15 @@ export const fileService = {
     const params = new URLSearchParams();
     
     if (filters) {
-      if (filters.search) params.append('search', filters.search);
       if (filters.fileType) params.append('file_type', filters.fileType);
       if (filters.minSize) params.append('min_size', filters.minSize.toString());
-      if (filters.maxSize) params.append('max_size', filters.maxSize.toString());
-      
-      // Format dates to YYYY-MM-DD
-      if (filters.startDate) {
-        const startDate = new Date(filters.startDate);
-        const formattedStartDate = startDate.toISOString().split('T')[0];
-        params.append('start_date', formattedStartDate);
-      }
-      
-      if (filters.endDate) {
-        const endDate = new Date(filters.endDate);
-        const formattedEndDate = endDate.toISOString().split('T')[0];
-        params.append('end_date', formattedEndDate);
-      }
-      
-      if (filters.isReference !== undefined) params.append('is_reference', filters.isReference.toString());
+      if (filters.startDate) params.append('start_date', filters.startDate);
+      if (filters.endDate) params.append('end_date', filters.endDate);
+      if (filters.search) params.append('search', filters.search);
       if (filters.minReferenceCount) params.append('min_reference_count', filters.minReferenceCount.toString());
       if (filters.maxReferenceCount) params.append('max_reference_count', filters.maxReferenceCount.toString());
     }
 
-    console.log('Sending request with params:', params.toString());
     const response = await axios.get(`${API_URL}/files/?${params.toString()}`);
     return response.data.results || [];
   },

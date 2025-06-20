@@ -7,8 +7,51 @@ from .serializers import FileSerializer
 from .utils import compute_file_hash
 from .filters import FileFilter
 import logging
+from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
+
+def root_view(request):
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>File Hub</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                text-align: center;
+            }
+            .links {
+                margin-top: 20px;
+            }
+            a {
+                display: inline-block;
+                margin: 10px;
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+            }
+            a:hover {
+                background-color: #0056b3;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Welcome to File Hub</h1>
+        <div class="links">
+            <a href="/admin/">Admin Interface</a>
+            <a href="/api/">API Endpoints</a>
+        </div>
+    </body>
+    </html>
+    """
+    return HttpResponse(html)
 
 class FileViewSet(viewsets.ModelViewSet):
     queryset = File.objects.all()

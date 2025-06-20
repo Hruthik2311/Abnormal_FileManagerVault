@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: abnormal-file-hub-backend
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r backend/requirements.txt
+      python backend/manage.py collectstatic --noinput
+    startCommand: gunicorn core.wsgi:application --chdir backend --bind 0.0.0.0:10000
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+    autoDeploy: true
+
+    # Optional: persist media/uploads
+    disk:
+      name: media
+      mountPath: /backend/media
+      sizeGB: 1
+
+    # Set working directory
+    rootDir: .
+
+    # Expose port
+    envSpecificPorts:
+      - port: 10000

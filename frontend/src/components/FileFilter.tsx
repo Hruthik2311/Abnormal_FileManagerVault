@@ -80,14 +80,13 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
       newActiveFilters.push('endDate');
     }
 
-    // Convert KB to bytes (1 KB = 1024 bytes)
     if (filters.minSize) {
-      processedFilters.minSize = Number(filters.minSize) * 1024; // Convert KB to bytes
+      processedFilters.minSize = Number(filters.minSize);
       newActiveFilters.push('minSize');
     }
 
     if (filters.maxSize) {
-      processedFilters.maxSize = Number(filters.maxSize) * 1024; // Convert KB to bytes
+      processedFilters.maxSize = Number(filters.maxSize);
       newActiveFilters.push('maxSize');
     }
 
@@ -181,6 +180,27 @@ export const FileFilter: React.FC<FileFilterProps> = ({ onFilterChange }) => {
               placeholder="Search files..."
             />
           </div>
+                    {/* Display Active Filters */}
+                    {activeFilters.length > 0 && (
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="font-medium">Active Filters: </span>
+              <span className="text-gray-700">
+                {activeFilters.map((filter, index) => {
+                  const displayName = filter === 'fileType' ? 'File Type' :
+                    filter === 'minSize' ? 'Min Size' :
+                    filter === 'maxSize' ? 'Max Size' :
+                    filter === 'startDate' ? 'Start Date' :
+                    filter === 'endDate' ? 'End Date' :
+                    filter === 'isReference' ? 'Reference Status' :
+                    filter === 'minReferenceCount' ? 'Min References' :
+                    filter === 'maxReferenceCount' ? 'Max References' :
+                    filter === 'search' ? 'Search' : filter;
+
+                  return `${displayName}${index < activeFilters.length - 1 ? ' • ' : ''}`;
+                })}
+              </span>
+            </div>
+          )}
         </div>
 
         {isExpanded && (

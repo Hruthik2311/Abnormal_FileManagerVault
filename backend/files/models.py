@@ -14,17 +14,22 @@ def file_upload_path(instance, filename):
 class File(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     file = models.FileField(upload_to=file_upload_path)
-    original_filename = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=100)
-    size = models.BigIntegerField()
-    hash = models.CharField(max_length=64)  # Removed unique=True
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    reference_count = models.PositiveIntegerField(default=1)
-    is_reference = models.BooleanField(default=False)
+    original_filename = models.CharField(max_length=255, db_index=True)
+    file_type = models.CharField(max_length=100, db_index=True)
+    size = models.BigIntegerField(db_index=True)
+    hash = models.CharField(max_length=64, db_index=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    reference_count = models.PositiveIntegerField(default=1, db_index=True)
+    is_reference = models.BooleanField(default=False, db_index=True)
     original_file = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='references')
     
     class Meta:
         ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['file_type', 'size']),
+            models.Index(fields=['uploaded_at', 'file_type']),
+            models.Index(fields=['reference_count', 'is_reference']),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['hash'],
